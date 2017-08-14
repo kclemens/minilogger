@@ -39,7 +39,7 @@ public class MiniLoggerBuilder {
         }
 
         this.progressPrintStreams = new HashSet<PrintStream>();
-        this.progressPrintStreams.add(System.out);
+        this.progressPrintStreams.add(System.err);
     }
 
     public MiniLogger build() {

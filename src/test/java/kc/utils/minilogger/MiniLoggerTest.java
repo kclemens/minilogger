@@ -5,7 +5,6 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Collections;
 
 /**
  * Created by kclemens on 8/14/17.
@@ -87,9 +86,8 @@ public class MiniLoggerTest {
         ByteArrayOutputStream consoleStream = new ByteArrayOutputStream(1024);
         ByteArrayOutputStream fileStream = new ByteArrayOutputStream(1024);
         MiniLogger miniLogger = new MiniLoggerBuilder()
-                .withLogPrintStreams(Collections.<PrintStream>emptySet())
-                .withProgressPrintStreams(Collections.singleton(new PrintStream(consoleStream)))
-                .withLogPrintStreams(Collections.singleton(new PrintStream(fileStream)))
+                .withLogPrintStream(new PrintStream(fileStream))
+                .withProgressPrintStream(new PrintStream(consoleStream))
                 .build();
 
         miniLogger.log("1234567890");

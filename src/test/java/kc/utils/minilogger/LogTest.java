@@ -21,8 +21,8 @@ public class LogTest {
                 .withTimePattern("time")
                 .withSeparator(" - ")
                 .withDebugEnabled(true)
-                .withLogPrintStreams(Collections.singleton(new PrintStream(logOnly)))
-                .withProgressPrintStreams(Collections.singleton(new PrintStream(logAndProgress)))
+                .withLogPrintStream(new PrintStream(logOnly))
+                .withProgressPrintStream(new PrintStream(logAndProgress))
                 .build();
 
         Log log = miniLogger.getLog("name");
@@ -45,8 +45,8 @@ public class LogTest {
         MiniLogger miniLogger = new MiniLoggerBuilder()
                 .withTimePattern("time")
                 .withSeparator(" - ")
-                .withLogPrintStreams(Collections.<PrintStream>emptySet())
-                .withProgressPrintStreams(Collections.singleton(new PrintStream(stream)))
+                .withLogPrintStream(null)
+                .withProgressPrintStream(new PrintStream(stream))
                 .withDebugEnabled(false)
                 .build();
 
@@ -66,8 +66,8 @@ public class LogTest {
         MiniLogger miniLogger = new MiniLoggerBuilder()
                 .withTimePattern("time")
                 .withSeparator(" - ")
-                .withLogPrintStreams(Collections.<PrintStream>emptySet())
-                .withProgressPrintStreams(Collections.singleton(new PrintStream(stream)))
+                .withLogPrintStream(null)
+                .withProgressPrintStream(new PrintStream(stream))
                 .withDebugEnabled(false)
                 .withFocusSet(Collections.singleton("focus"))
                 .build();
@@ -88,8 +88,8 @@ public class LogTest {
         ByteArrayOutputStream stream = new ByteArrayOutputStream(1024);
         MiniLogger miniLogger = new MiniLoggerBuilder()
                 .withTimePattern("time")
-                .withLogPrintStreams(Collections.<PrintStream>emptySet())
-                .withProgressPrintStreams(Collections.singleton(new PrintStream(stream)))
+                .withLogPrintStream(null)
+                .withProgressPrintStream(new PrintStream(stream))
                 .withLogNameLength(5)
                 .build();
 
@@ -112,8 +112,8 @@ public class LogTest {
         MiniLogger miniLogger = new MiniLoggerBuilder()
                 .withTimePattern("time")
                 .withSeparator(" - ")
-                .withLogPrintStreams(Collections.<PrintStream>emptySet())
-                .withProgressPrintStreams(Collections.singleton(new PrintStream(stream)))
+                .withLogPrintStream(null)
+                .withProgressPrintStream(new PrintStream(stream))
                 .withDebugEnabled(true)
                 .withMuteSet(Collections.singleton("mute"))
                 .build();

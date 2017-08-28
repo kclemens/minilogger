@@ -9,7 +9,7 @@ import java.util.Set;
  */
 public class MiniLogger {
 
-    public static final MiniLogger root = new MiniLoggerBuilder().build();
+    public static final MiniLogger root = MiniLoggerBuilder.fromFile().build();
 
     private boolean debugEnabled;
     private String timePattern;
@@ -17,21 +17,20 @@ public class MiniLogger {
     private int logNameLength;
     private String namePattern;
     private int lastProgressLineLength = 0;
-
     private final Set<String> muteSet;
     private final Set<String> focusSet;
-    private final Set<PrintStream> logPrintStreams;
-    private final Set<PrintStream> progressPrintStreams;
+    private final PrintStream logPrintStream;
+    private final PrintStream progressPrintStream;
 
-    public MiniLogger(String timePattern, String separator, int logNameLength, boolean debugEnabled, Set<String> muteSet, Set<String> focusSet, Set<PrintStream> logPrintStreams, Set<PrintStream> progressPrintStreams) {
+    public MiniLogger(String timePattern, String separator, int logNameLength, boolean debugEnabled, Set<String> muteSet, Set<String> focusSet, PrintStream logPrintStreams, PrintStream progressPrintStreams) {
         this.timePattern = timePattern;
         this.separator = separator;
         this.debugEnabled = debugEnabled;
         this.logNameLength = logNameLength;
         this.muteSet = muteSet;
         this.focusSet = focusSet;
-        this.logPrintStreams = logPrintStreams;
-        this.progressPrintStreams = progressPrintStreams;
+        this.logPrintStream = logPrintStreams;
+        this.progressPrintStream = progressPrintStreams;
 
         this.namePattern = separator + "%" + logNameLength + "s" + separator;
     }
@@ -88,20 +87,20 @@ public class MiniLogger {
 
     /** internal methods used by the logger **/
     void log(String line) {
-        for (PrintStream printStream : progressPrintStreams) {
+        if (this.progressPrintStream != null) {
             if (this.lastProgressLineLength > 0) {
-                printStream.print('\n');
+                this.progressPrintStream.print('\n');
             }
-            printStream.print(line);
-            printStream.print('\n');
-            printStream.flush();
+            this.progressPrintStream.print(line);
+            this.progressPrintStream.print('\n');
+            this.progressPrintStream.flush();
         }
-        for (PrintStream printStream : logPrintStreams) {
-            printStream.print(line);
-            printStream.print('\n');
-            printStream.flush();
+
+        if (this.logPrintStream != null) {
+            this.logPrintStream.print(line);
+            this.logPrintStream.print('\n');
+            this.logPrintStream.flush();
         }
-        this.lastProgressLineLength = 0;
     }
 
     void progress(String line) {
@@ -113,11 +112,9 @@ public class MiniLogger {
             this.lastProgressLineLength = line.length();
         }
 
-        for (PrintStream printStream : progressPrintStreams) {
-            printStream.print(line);
-            printStream.print('\r');
-            printStream.flush();
-        }
+        progressPrintStream.print(line);
+        progressPrintStream.print('\r');
+        progressPrintStream.flush();
     }
 
     String getTimePattern() {

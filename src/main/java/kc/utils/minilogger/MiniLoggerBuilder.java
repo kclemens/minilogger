@@ -1,7 +1,7 @@
 package kc.utils.minilogger;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
+import java.io.*;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,38 +12,107 @@ public class MiniLoggerBuilder {
 
     public static final String DEFAILT_TIME_PATTERN = "%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tS.%1$tL";
     public static final String DEFAILT_SEPARATOR = " ";
-    public static final boolean DEFAILT_DEBUG_ENABLED = false;
+    public static final boolean DEFAILT_DEBUG_ENABLED = true;
     public static final int DEFAULT_LOG_NAME_LENGTH = 10;
+    public static final String DEFAULT_LOG_FILE = "log.txt";
+    public static final PrintStream DEFAULT_LOG_CONSOLE = System.err;
 
-    private String timePattern;
-    private String separator;
-    private boolean debugEnabled;
+    String timePattern;
+    String separator;
+    boolean debugEnabled;
+    int logNameLength;
+    Set<String> muteSet;
+    Set<String> focusSet;
+    PrintStream logPrintStream;
+    PrintStream progressPrintStream;
 
-    private int logNameLength;
+    public static MiniLoggerBuilder fromFile() {
+        return fromFile("/minilogger.conf");
+    }
 
-    private Set<String> muteSet;
-    private Set<String> focusSet;
-    private Set<PrintStream> logPrintStreams;
-    private Set<PrintStream> progressPrintStreams;
+    public static MiniLoggerBuilder fromFile(String configFileName) {
+        MiniLoggerBuilder builder = new MiniLoggerBuilder();
 
-    public MiniLoggerBuilder() {
-        this.timePattern = DEFAILT_TIME_PATTERN;
-        this.separator = DEFAILT_SEPARATOR;
-        this.debugEnabled = DEFAILT_DEBUG_ENABLED;
-        this.logNameLength = DEFAULT_LOG_NAME_LENGTH;
-
-        this.muteSet = new HashSet<String>();
-        this.focusSet = new HashSet<String>();
-
-        this.logPrintStreams = new HashSet<PrintStream>();
-        try {
-            logPrintStreams.add(new PrintStream("log.txt"));
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Cannot add file log", e);
+        InputStream configStream = MiniLoggerBuilder.class.getResourceAsStream(configFileName);
+        if (configStream == null) {
+            return builder;
         }
 
-        this.progressPrintStreams = new HashSet<PrintStream>();
-        this.progressPrintStreams.add(System.err);
+        BufferedReader configReader = new BufferedReader(new InputStreamReader(configStream));
+
+        try {
+            for (String line = configReader.readLine(); line != null; line = configReader.readLine()) {
+
+                // cut off comments and witespace
+                int commentStart = line.indexOf("#");
+                if (commentStart >= 0) {
+                    line = line.substring(0, commentStart);
+                }
+                line = line.trim();
+
+                // ignore lines w/o content
+                if ("".equals(line)) {
+                    // ignore empty lines
+                } else if (line.startsWith("timePattern:")) {
+                    builder.withTimePattern(line.substring("timePattern:".length()).trim());
+                } else if (line.startsWith("separator:")) {
+                    builder.withSeparator(line.substring("separator:".length()).trim());
+                } else if (line.startsWith("debugEnabled:")) {
+                    builder.withDebugEnabled(Boolean.parseBoolean(line.substring("debugEnabled:".length()).trim()));
+                } else if (line.startsWith("logNameLength:")) {
+                    builder.withLogNameLength(Integer.parseInt(line.substring("logNameLength:".length()).trim()));
+                } else if (line.startsWith("muteSet:")) {
+                    HashSet<String> muteSet = new HashSet<String>();
+                    String mutes = line.substring("muteSet:".length()).trim();
+                    if (mutes.length() > 0) {
+                        Collections.addAll(muteSet, mutes.split(","));
+                    }
+                    builder.withMuteSet(muteSet);
+                } else if (line.startsWith("focusSet:")) {
+                    HashSet<String> focusSet = new HashSet<String>();
+                    String focuses = line.substring("focusSet:".length()).trim();
+                    if (focuses.length() > 0) {
+                        Collections.addAll(focusSet, focuses.split(","));
+                    }
+                    builder.withFocusSet(focusSet);
+                } else if (line.startsWith("file:")) {
+                    String fileName = line.substring("file:".length()).trim();
+                    if (fileName.length() > 0) {
+                        builder.withLogFile(fileName);
+                    } else {
+                        builder.withLogPrintStream(null);
+                    }
+                } else if (line.startsWith("console:")) {
+                    String console = line.substring("console:".length()).trim();
+                    if ("".equals(console)) {
+                        builder.withProgressPrintStream(null);
+                    } else if ("out".equalsIgnoreCase(console)) {
+                        builder.withProgressPrintStream(System.out);
+                    } else if ("err".equalsIgnoreCase(console)) {
+                        builder.withProgressPrintStream(System.err);
+                    } else {
+                        throw new IllegalArgumentException("Unexpected console defined, expected 'out' or 'err', but got " + console);
+                    }
+                } else {
+                    throw new IllegalArgumentException("Cannot parse config file line '" + line + "'!");
+                }
+            }
+
+            return builder;
+        } catch (IOException e) {
+            throw new RuntimeException("Exception while reading config file " + configFileName + "!", e);
+        }
+    }
+
+    public MiniLoggerBuilder() {
+        this.withTimePattern(DEFAILT_TIME_PATTERN);
+        this.withSeparator(DEFAILT_SEPARATOR);
+        this.withDebugEnabled(DEFAILT_DEBUG_ENABLED);
+        this.withLogNameLength(DEFAULT_LOG_NAME_LENGTH);
+        this.withMuteSet(new HashSet<String>());
+        this.withFocusSet(new HashSet<String>());
+        this.withLogFile(DEFAULT_LOG_FILE);
+        this.withProgressPrintStream(DEFAULT_LOG_CONSOLE);
     }
 
     public MiniLogger build() {
@@ -54,8 +123,8 @@ public class MiniLoggerBuilder {
                 this.debugEnabled,
                 this.muteSet,
                 this.focusSet,
-                this.logPrintStreams,
-                this.progressPrintStreams);
+                this.logPrintStream,
+                this.progressPrintStream);
     }
 
     public MiniLoggerBuilder withTimePattern(String timePattern) {
@@ -73,13 +142,21 @@ public class MiniLoggerBuilder {
         return this;
     }
 
-    public MiniLoggerBuilder withLogPrintStreams(Set<PrintStream> logPrintStreams) {
-        this.logPrintStreams = logPrintStreams;
+    public MiniLoggerBuilder withLogPrintStream(PrintStream logPrintStream) {
+        this.logPrintStream = logPrintStream;
         return this;
     }
 
-    public MiniLoggerBuilder withProgressPrintStreams(Set<PrintStream> progressPrintStreams) {
-        this.progressPrintStreams = progressPrintStreams;
+    public MiniLoggerBuilder withLogFile(String fileName) {
+        try {
+            return this.withLogPrintStream(new PrintStream(fileName));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Cannot log to file '" + fileName + "'!", e);
+        }
+    }
+
+    public MiniLoggerBuilder withProgressPrintStream(PrintStream progressPrintStream) {
+        this.progressPrintStream = progressPrintStream;
         return this;
     }
 

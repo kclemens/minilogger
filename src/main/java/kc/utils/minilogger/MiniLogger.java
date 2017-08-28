@@ -88,21 +88,19 @@ public class MiniLogger {
 
     /** internal methods used by the logger **/
     void log(String line) {
-        if (this.lastProgressLineLength > 0) {
-            line = String.format("%-" + this.lastProgressLineLength + "s", line);
+        for (PrintStream printStream : progressPrintStreams) {
+            if (this.lastProgressLineLength > 0) {
+                printStream.print('\n');
+            }
+            printStream.print(line);
+            printStream.print('\n');
+            printStream.flush();
         }
-
         for (PrintStream printStream : logPrintStreams) {
             printStream.print(line);
             printStream.print('\n');
             printStream.flush();
         }
-        for (PrintStream printStream : progressPrintStreams) {
-            printStream.print(line);
-            printStream.print('\n');
-            printStream.flush();
-        }
-
         this.lastProgressLineLength = 0;
     }
 

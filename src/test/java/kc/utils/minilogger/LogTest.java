@@ -151,6 +151,6 @@ public class LogTest {
                 e.printStackTrace();
             }
         }
-        log.info("all done.");
+        log.info("thank you and good bye.");
     }
 }

@@ -10,7 +10,7 @@ import java.util.Set;
  */
 public class MiniLoggerBuilder {
 
-    public static final String DEFAILT_TIME_PATTERN = "%1$tY-%1$tM-%1$tdT%1$tH:%1$tM:%1$tS.%1$tL";
+    public static final String DEFAILT_TIME_PATTERN = "%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tS.%1$tL";
     public static final String DEFAILT_SEPARATOR = " ";
     public static final boolean DEFAILT_DEBUG_ENABLED = false;
     public static final int DEFAULT_LOG_NAME_LENGTH = 10;

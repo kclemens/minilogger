@@ -28,8 +28,9 @@ public class Log {
     public void debug(String text, Object...params) {
         boolean isMuted = this.logger.getMuteSet().contains(this.name);
         boolean isFocused = this.logger.getFocusSet().contains(this.name);
+        boolean isEnabled = this.logger.isDebugEnabled();
 
-        if (!isMuted && (this.logger.isDebugEnabled() || isFocused)) {
+        if (!isMuted && (isEnabled || isFocused)) {
             this.logger.log(makeLine(text, params));
         }
     }

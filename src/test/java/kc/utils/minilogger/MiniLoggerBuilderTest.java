@@ -29,7 +29,6 @@ public class MiniLoggerBuilderTest {
                 .build();
 
         Assert.assertTrue(miniLogger.isDebugEnabled());
-        Assert.assertEquals("--", miniLogger.getSeparator());
         Assert.assertEquals("time", miniLogger.getTimePattern());
         Assert.assertEquals("--%12s--", miniLogger.getNamePattern());
     }

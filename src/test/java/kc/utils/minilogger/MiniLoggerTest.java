@@ -21,13 +21,26 @@ public class MiniLoggerTest {
 
     @Test
     public void testChangeSeparator() {
-        MiniLogger miniLogger = new MiniLoggerBuilder().build();
+        MiniLogger miniLogger = new MiniLoggerBuilder()
+                .withSeparator("-")
+                .withLogNameLength(33)
+                .build();
 
-        String newSeparator = "new separator";
+        Assert.assertEquals("-%33s-", miniLogger.getNamePattern());
+        miniLogger.setSeparator("++");
+        Assert.assertEquals("++%33s++", miniLogger.getNamePattern());
+    }
 
-        Assert.assertNotEquals(newSeparator, miniLogger.getSeparator());
-        miniLogger.setSeparator(newSeparator);
-        Assert.assertEquals(newSeparator, miniLogger.getSeparator());
+    @Test
+    public void testChangeLogNameLength() {
+        MiniLogger miniLogger = new MiniLoggerBuilder()
+                .withSeparator("-")
+                .withLogNameLength(33)
+                .build();
+
+        Assert.assertEquals("-%33s-", miniLogger.getNamePattern());
+        miniLogger.setLogNameLength(12);
+        Assert.assertEquals("-%12s-", miniLogger.getNamePattern());
     }
 
     @Test

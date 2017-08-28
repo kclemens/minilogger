@@ -4,9 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>kc.utils</groupId>
+    <groupId>com.github.kclemens</groupId>
     <artifactId>minilogger</artifactId>
     <version>0.1-SNAPSHOT</version>
+
+    <scm>
+        <connection>scm:git:git://github.com/kclemens/minilogger.git</connection>
+        <developerConnection>scm:git:git@github.com:kclemens/minilogger.git</developerConnection>
+        <url>http://github.com/kclemens/minilogger</url>
+    </scm>
 
     <dependencies>
         <dependency>

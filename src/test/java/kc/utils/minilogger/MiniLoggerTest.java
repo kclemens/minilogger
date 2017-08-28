@@ -3,6 +3,10 @@ package kc.utils.minilogger;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.Collections;
+
 /**
  * Created by kclemens on 8/14/17.
  */
@@ -76,6 +80,30 @@ public class MiniLoggerTest {
         Assert.assertTrue(miniLogger.getMuteSet().contains(muteName));
         miniLogger.removeMute(muteName);
         Assert.assertFalse(miniLogger.getMuteSet().contains(muteName));
+    }
+
+    @Test
+    public void testOverwriteEntireProgressLine() {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream(1024);
+        MiniLogger miniLogger = new MiniLoggerBuilder()
+                .withLogPrintStreams(Collections.<PrintStream>emptySet())
+                .withProgressPrintStreams(Collections.singleton(new PrintStream(stream)))
+                .build();
+
+        miniLogger.log("1234567890");
+        miniLogger.progress("123456");
+        miniLogger.progress("1234");
+        miniLogger.progress("123");
+        miniLogger.progress("12345");
+        miniLogger.log("12");
+
+        Assert.assertEquals(
+                "1234567890\n" +
+                "123456\r" +
+                "1234  \r" +
+                "123 \r" +
+                "12345\r" +
+                "12   \n", stream.toString());
     }
 
 }

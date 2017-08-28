@@ -17,10 +17,8 @@ public class Log {
 
     private String makeLine(String text, Object...params) {
         return String.format(this.logger.getTimePattern(), Calendar.getInstance()) +
-                             this.logger.getSeparator() +
-                             this.name +
-                             this.logger.getSeparator() +
-                             String.format(text, params);
+               String.format(this.logger.getNamePattern(), this.name) +
+               String.format(text, params);
     }
 
     public void info(String text, Object...params) {

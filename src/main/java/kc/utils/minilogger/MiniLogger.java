@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.Set;
 
 /**
- * Created by kclemens on 8/12/17.
+ * The configurable Logger that  log to.
  */
 public class MiniLogger {
 
@@ -13,6 +13,8 @@ public class MiniLogger {
 
     private String timePattern;
     private String separator;
+    private int maxLogNameLength;
+    private String namePattern;
     private boolean debugEnabled;
 
     private final Set<String> muteSet;
@@ -20,25 +22,30 @@ public class MiniLogger {
     private final Set<PrintStream> logPrintStreams;
     private final Set<PrintStream> progressPrintStreams;
 
-    public MiniLogger(String timePattern, String separator, boolean debugEnabled, Set<String> muteSet, Set<String> focusSet, Set<PrintStream> logPrintStreams, Set<PrintStream> progressPrintStreams) {
+    public MiniLogger(String timePattern, String separator, int logNameLength, boolean debugEnabled, Set<String> muteSet, Set<String> focusSet, Set<PrintStream> logPrintStreams, Set<PrintStream> progressPrintStreams) {
         this.timePattern = timePattern;
         this.separator = separator;
         this.debugEnabled = debugEnabled;
+        this.maxLogNameLength = logNameLength;
         this.muteSet = muteSet;
         this.focusSet = focusSet;
         this.logPrintStreams = logPrintStreams;
         this.progressPrintStreams = progressPrintStreams;
+
+        this.namePattern = separator + "%" + logNameLength + "s" + separator;
     }
 
     public Log getLog() {
         StackTraceElement stackTraceElement = Thread.currentThread().getStackTrace()[2];
-//        System.out.println("stackTraceElement = " + stackTraceElement);
-
-
-        return getLog(stackTraceElement.getClassName());
+        String name = stackTraceElement.getClassName();
+        return getLog(name.substring(name.lastIndexOf('.') + 1));
     }
 
     public Log getLog(String name) {
+        if (name.length() > this.maxLogNameLength) {
+            name = name.substring(0, this.maxLogNameLength - 2) + "..";
+        }
+
         return new Log(this, name);
     }
 
@@ -109,5 +116,9 @@ public class MiniLogger {
 
     public void removeMute(String name) {
         this.muteSet.remove(name);
+    }
+
+    public String getNamePattern() {
+        return this.namePattern;
     }
 }

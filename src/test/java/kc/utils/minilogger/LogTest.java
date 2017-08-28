@@ -20,6 +20,7 @@ public class LogTest {
         MiniLogger miniLogger = new MiniLoggerBuilder()
                 .withTimePattern("time")
                 .withSeparator(" - ")
+                .withDebugEnabled(true)
                 .withLogPrintStreams(Collections.singleton(new PrintStream(logOnly)))
                 .withProgressPrintStreams(Collections.singleton(new PrintStream(logAndProgress)))
                 .build();
@@ -30,11 +31,11 @@ public class LogTest {
         log.progress("%s %s", "hello", "world");
 
         Assert.assertEquals(
-                "time - name - hello world\ntime - name - hello world\ntime - name - hello world\r",
+                "time -       name - hello world\ntime -       name - hello world\ntime -       name - hello world\r",
                 logAndProgress.toString());
 
         Assert.assertEquals(
-                "time - name - hello world\ntime - name - hello world\n",
+                "time -       name - hello world\ntime -       name - hello world\n",
                 logOnly.toString());
     }
 
@@ -55,7 +56,7 @@ public class LogTest {
         log.progress("%s %s", "hello", "world");
 
         Assert.assertEquals(
-                "time - name - hello world\ntime - name - hello world\r",
+                "time -       name - hello world\ntime -       name - hello world\r",
                 stream.toString());
     }
 
@@ -78,7 +79,30 @@ public class LogTest {
         other.debug("other message");
 
         Assert.assertEquals(
-                "time - focus - message\n",
+                "time -      focus - message\n",
+                stream.toString());
+    }
+
+    @Test
+    public void testCommonNameWidth() {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream(1024);
+        MiniLogger miniLogger = new MiniLoggerBuilder()
+                .withTimePattern("time")
+                .withLogPrintStreams(Collections.<PrintStream>emptySet())
+                .withProgressPrintStreams(Collections.singleton(new PrintStream(stream)))
+                .withLogNameLength(5)
+                .build();
+
+        miniLogger.getLog("a").info("a");
+        miniLogger.getLog("bb").info("bb");
+        miniLogger.getLog("super-long-name").info("super-long-name");
+        miniLogger.getLog("cc").info("cc");
+
+        Assert.assertEquals(
+                "time     a a\n" +
+                "time    bb bb\n" +
+                "time sup.. super-long-name\n" +
+                "time    cc cc\n",
                 stream.toString());
     }
 
@@ -101,7 +125,7 @@ public class LogTest {
         other.debug("message");
 
         Assert.assertEquals(
-                "time - other - message\n",
+                "time -      other - message\n",
                 stream.toString());
     }
 
@@ -109,7 +133,7 @@ public class LogTest {
     public void testDeriveDefaultNameForLogger() {
         Log log = new MiniLoggerBuilder().build().getLog();
 
-        Assert.assertEquals(LogTest.class.getCanonicalName(), log.getName());
+        Assert.assertEquals("LogTest", log.getName());
     }
 
     @Test
@@ -117,12 +141,12 @@ public class LogTest {
     public void demo() {
         Log log = MiniLogger.root.getLog();
 
-        log.info("loading data...");
+        log.info("loading fake data with Threed.sleep to emulate long-lasting progress...");
         String[] rotator = {"/", "-", "\\", "|"};
         for (int i = 0; i <= 100; i++) {
-            log.progress("%s %3s%%", rotator[i % rotator.length], i);
+            log.progress("%s %3s%% completed.", rotator[i % rotator.length], i);
             try {
-                Thread.sleep(100);
+                Thread.sleep(33);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -5,11 +5,11 @@ import java.io.PrintStream;
 import java.util.Set;
 
 /**
- * The configurable Logger that  log to.
+ * The configurable Logger that manages configuration for Log instances.
  */
 public class MiniLogger {
 
-    public static final MiniLogger root = MiniLoggerBuilder.fromFile().build();
+    public static final MiniLogger ROOT = MiniLoggerBuilder.fromFile().build();
 
     private boolean debugEnabled;
     private String timePattern;
@@ -22,7 +22,7 @@ public class MiniLogger {
     private final PrintStream logPrintStream;
     private final PrintStream progressPrintStream;
 
-    public MiniLogger(String timePattern, String separator, int logNameLength, boolean debugEnabled, Set<String> muteSet, Set<String> focusSet, PrintStream logPrintStreams, PrintStream progressPrintStreams) {
+    MiniLogger(String timePattern, String separator, int logNameLength, boolean debugEnabled, Set<String> muteSet, Set<String> focusSet, PrintStream logPrintStreams, PrintStream progressPrintStreams) {
         this.timePattern = timePattern;
         this.separator = separator;
         this.debugEnabled = debugEnabled;
@@ -35,13 +35,26 @@ public class MiniLogger {
         this.namePattern = separator + "%" + logNameLength + "s" + separator;
     }
 
-    /** generate log instances **/
+    /**
+     * Creates a Log that uses this MiniLoggers configuration params with the name of the class where this method
+     * has been called from. Note, packages are not part of generated Log names; also if the logNameLength parameter
+     * is smaller than the class name, the name will be abbreviated.
+     *
+     * @return the Log created
+     */
     public Log getLog() {
         StackTraceElement stackTraceElement = Thread.currentThread().getStackTrace()[2];
         String name = stackTraceElement.getClassName();
         return getLog(name.substring(name.lastIndexOf('.') + 1));
     }
 
+    /**
+     * Creates a Log that uses this MiniLoggers configuration params with the name specified. Note, if the
+     * logNameLength parameter is smaller than the specified name, it will be abbreviated.
+     *
+     * @param name the name for the Log
+     * @return the Log created
+     */
     public Log getLog(String name) {
         if (name.length() > this.logNameLength) {
             name = name.substring(0, this.logNameLength - 2) + "..";
@@ -50,42 +63,86 @@ public class MiniLogger {
         return new Log(this, name);
     }
 
-    /** public configuration changable at runtime **/
+    /**
+     * Update the time pattern on this MiniLogger affecting all Logs created using this MiniLogger instance.
+     *
+     * @param timePattern the time pattern to use
+     */
     public void setTimePattern(String timePattern) {
         this.timePattern = timePattern;
     }
 
+    /**
+     * Update the debug flag on this MiniLogger affecting all Logs created using this MiniLogger instance.
+     *
+     * @param debugEnabled true to enable debugging, or false to disable it
+     */
     public void setDebugEnabled(boolean debugEnabled) {
         this.debugEnabled = debugEnabled;
     }
 
-    public void addFocus(String name) {
+    /**
+     * Update the focus list on this MiniLogger affecting all Logs created using this MiniLogger instance. Focused
+     * Logs are outputting debug statements if they are not muted, even if debug is disabled.
+     *
+     * @param name the Log name to focus on
+     */
+    public void focus(String name) {
         this.focusSet.add(name);
     }
 
-    public void removeFocus(String name) {
+    /**
+     * Update the focus list on this MiniLogger affecting all Logs created using this MiniLogger instance. Focused
+     * Logs are outputting debug statements if they are not muted, even if debug is disabled.
+     *
+     * @param name the Log name to no longer focus on
+     */
+    public void unFocus(String name) {
         this.focusSet.remove(name);
     }
 
-    public void addMute(String name) {
+    /**
+     * Update the mute list on this MiniLogger affecting all Logs created using this MiniLogger instance. Muted Logs
+     * are not outputting debug statements, even if debug is enabled, or the logs are focused.
+     *
+     * @param name the Log name to mute
+     */
+    public void mute(String name) {
         this.muteSet.add(name);
     }
 
-    public void removeMute(String name) {
+    /**
+     * Update the mute list on this MiniLogger affecting all Logs created using this MiniLogger instance. Muted Logs
+     * are not outputting debug statements, even if debug is enabled, or the logs are focused.
+     *
+     * @param name the Log name to no longer mute
+     */
+    public void unMute(String name) {
         this.muteSet.remove(name);
     }
 
+    /**
+     * Update the separator on this MiniLogger affecting all Logs created using this MiniLogger instance.
+     *
+     * @param separator the new separator to use between the timestamp, the Log name, and the Log message.
+     */
     public void setSeparator(String separator) {
         this.separator = separator;
         this.namePattern = this.separator + "%" + this.logNameLength + "s" + this.separator;
     }
 
+    /**
+     * Update the log name length on this MiniLogger affecting all Logs created using this MiniLogger instance. Note,
+     * increasing the logNameLength will not expand already abbreviated Log names. Similarly, decreasing the log name
+     * length, will only abbreviate longer names of newly created Logs.
+     *
+     * @param logNameLength the new logNameLength to pad or abbreviate future Log names to.
+     */
     public void setLogNameLength(int logNameLength) {
         this.logNameLength = logNameLength;
         this.namePattern = this.separator + "%" + this.logNameLength + "s" + this.separator;
     }
 
-    /** internal methods used by the logger **/
     void log(String line) {
         if (this.progressPrintStream != null) {
             if (this.lastProgressLineLength > 0) {

@@ -62,9 +62,9 @@ public class MiniLoggerTest {
         String focusName = "name";
 
         Assert.assertFalse(miniLogger.getFocusSet().contains(focusName));
-        miniLogger.addFocus(focusName);
+        miniLogger.focus(focusName);
         Assert.assertTrue(miniLogger.getFocusSet().contains(focusName));
-        miniLogger.removeFocus(focusName);
+        miniLogger.unFocus(focusName);
         Assert.assertFalse(miniLogger.getFocusSet().contains(focusName));
     }
 
@@ -75,9 +75,9 @@ public class MiniLoggerTest {
         String muteName = "name";
 
         Assert.assertFalse(miniLogger.getMuteSet().contains(muteName));
-        miniLogger.addMute(muteName);
+        miniLogger.mute(muteName);
         Assert.assertTrue(miniLogger.getMuteSet().contains(muteName));
-        miniLogger.removeMute(muteName);
+        miniLogger.unMute(muteName);
         Assert.assertFalse(miniLogger.getMuteSet().contains(muteName));
     }
 

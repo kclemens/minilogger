@@ -3,6 +3,8 @@ package kc.utils.minilogger;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
+
 /**
  * Created by kclemens on 8/14/17.
  */
@@ -39,8 +41,13 @@ public class MiniLoggerBuilderTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testLoadConfigFromBrokenFile() {
+    public void testLoadConfigFromBrokenFile() throws FileNotFoundException {
         MiniLoggerBuilder.fromFile("/broken-minilogger.conf");
+    }
+
+    @Test(expected = FileNotFoundException.class)
+    public void testLoadConfigFromNonExistingFile() throws FileNotFoundException {
+        MiniLoggerBuilder.fromFile("/non-existing-file-name.conf");
     }
 
     @Test

@@ -130,16 +130,31 @@ public class LogTest {
     }
 
     @Test
-    public void testDeriveDefaultNameForLogger() {
-        Log log = new MiniLoggerBuilder().build().getLog();
+    public void testNamesForLogger() {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream(1024);
+        MiniLogger miniLogger = new MiniLoggerBuilder()
+                .withTimePattern("")
+                .withSeparator("")
+                .withLogPrintStream(null)
+                .withProgressPrintStream(new PrintStream(stream))
+                .withLogNameLength(7)
+                .build();
 
-        Assert.assertEquals("LogTest", log.getName());
+        miniLogger.getLog("1234567890").info("");
+        miniLogger.getLog().info("");
+        miniLogger.getLog("123").info("");
+
+        Assert.assertEquals(
+                "12345..\n" +
+                "LogTest\n" +
+                "    123\n",
+                stream.toString());
     }
 
     @Test
     @Ignore
     public void demo() {
-        Log log = MiniLogger.root.getLog();
+        Log log = new MiniLoggerBuilder().build().getLog();
 
         log.info("loading fake data with Threed.sleep to emulate long-lasting progress...");
         String[] rotator = {"/", "-", "\\", "|"};

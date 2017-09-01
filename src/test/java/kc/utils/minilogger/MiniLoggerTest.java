@@ -82,7 +82,7 @@ public class MiniLoggerTest {
     }
 
     @Test
-    public void testOverwriteEntireProgressLine() {
+    public void testLeaveLastProgressLineInFile() {
         ByteArrayOutputStream consoleStream = new ByteArrayOutputStream(1024);
         ByteArrayOutputStream fileStream = new ByteArrayOutputStream(1024);
         MiniLogger miniLogger = new MiniLoggerBuilder()
@@ -95,6 +95,7 @@ public class MiniLoggerTest {
         miniLogger.progress("1234");
         miniLogger.progress("123");
         miniLogger.progress("12345");
+        miniLogger.progress("123");
         miniLogger.log("12");
 
         Assert.assertEquals(
@@ -103,12 +104,14 @@ public class MiniLoggerTest {
                 "1234  \r" +
                 "123 \r" +
                 "12345\r" +
+                "123  \r" +
                 "\n" +
                 "12\n", consoleStream.toString());
 
 
         Assert.assertEquals(
                 "1234567890\n" +
+                "123\n" +
                 "12\n", fileStream.toString());
     }
 

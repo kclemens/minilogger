@@ -16,7 +16,8 @@ public class MiniLogger {
     private String separator;
     private int logNameLength;
     private String namePattern;
-    private int lastProgressLineLength = 0;
+    private String lastProgressLine;
+
     private final Set<String> muteSet;
     private final Set<String> focusSet;
     private final PrintStream logPrintStream;
@@ -145,7 +146,7 @@ public class MiniLogger {
 
     void log(String line) {
         if (this.progressPrintStream != null) {
-            if (this.lastProgressLineLength > 0) {
+            if (this.lastProgressLine != null) {
                 this.progressPrintStream.print('\n');
             }
             this.progressPrintStream.print(line);
@@ -154,22 +155,26 @@ public class MiniLogger {
         }
 
         if (this.logPrintStream != null) {
+            if (this.lastProgressLine != null) {
+                this.logPrintStream.print(this.lastProgressLine);
+                this.logPrintStream.print('\n');
+            }
             this.logPrintStream.print(line);
             this.logPrintStream.print('\n');
             this.logPrintStream.flush();
         }
+
+        this.lastProgressLine = null;
     }
 
     void progress(String line) {
-        if (this.lastProgressLineLength > 0) {
-            String prolongedLine = String.format("%-" + this.lastProgressLineLength + "s", line);
-            this.lastProgressLineLength = line.length();
-            line = prolongedLine;
-        } else {
-            this.lastProgressLineLength = line.length();
+        String eventuallyProlongedLine = line;
+        if (this.lastProgressLine != null) {
+            eventuallyProlongedLine = String.format("%-" + this.lastProgressLine.length() + "s", line);
         }
+        this.lastProgressLine = line;
 
-        progressPrintStream.print(line);
+        progressPrintStream.print(eventuallyProlongedLine);
         progressPrintStream.print('\r');
         progressPrintStream.flush();
     }

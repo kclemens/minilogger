@@ -53,9 +53,10 @@ public class Log {
     }
 
     /**
-     * Logs a message to the console stream, if it is configured. A subsequent call to this method will overwrite the
-     * last message output via this method. A subsequent call to info (or, if enabled, debug) will not overwrite the
-     * last progress statement.
+     * Logs a message to the console stream, if it is configured. The next progress statement will overwrite the
+     * previous progress statement, enabling displaying the progress through percentages, a progress bar, or displaying
+     * anticipated time of completion. A subsequent info or debug statement, if configured and issued will not
+     * overwrite the last line and also persist it to the file stream.
      *
      * @param pattern the pattern String that formats params, if any
      * @param params optional array of parameters that will be serialized using the specified pattern.

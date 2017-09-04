@@ -6,6 +6,7 @@
 
     <groupId>com.github.kclemens</groupId>
     <artifactId>minilogger</artifactId>
+    <name>minilogger</name>
     <version>0.1</version>
 
     <properties>

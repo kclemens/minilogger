@@ -7,7 +7,7 @@
     <groupId>com.github.kclemens</groupId>
     <artifactId>minilogger</artifactId>
     <name>minilogger</name>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
     <description>The minilogger library is a very simple logging framework that is fully re-configurable at runtime and supports the 'progress' log level which allows displaying the progress of a process.</description>
     <url>http://github.com/kclemens/minilogger</url>
 

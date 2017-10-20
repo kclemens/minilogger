@@ -115,4 +115,14 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+<!--
+#release process:
+mvn versions:set -DnewVersion=0.2
+mvn clean deploy
+git commit -m 'release MiniLogger v0.2'
+mvn versions:set -DnewVersion=0.3-SNAPSHOT
+git commit -m 'MiniLogger v0.3-SNAPSHOT development starts'
+-->
+
 </project>

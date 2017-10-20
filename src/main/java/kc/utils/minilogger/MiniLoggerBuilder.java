@@ -258,10 +258,12 @@ public class MiniLoggerBuilder {
     }
 
     /**
-     * Specifies the Silence period
+     * Specifies the silence period during which progress statements are not written to the console for performance
+     * reasons. In milliseconds.
      *
-     * @param progressSilencePeriod
-     * @return
+     * @param progressSilencePeriod the period after a progress statement during which subsequent progress statements
+     *                              are not written to the console.
+     * @return this MiniLoggerBuilder, for further configuration
      */
     public MiniLoggerBuilder withProgressSilencePeriod(long progressSilencePeriod) {
         this.progressSilencePeriod = progressSilencePeriod;

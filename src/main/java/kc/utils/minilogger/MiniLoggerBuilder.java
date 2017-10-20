@@ -11,7 +11,7 @@ import java.util.Set;
 public class MiniLoggerBuilder {
 
     /**
-     * The default time pattern produces log lines starting with yyyy-mm-ddTHH:MM:SS.ssss, e.g. 2017-08-28T20:26:16.449
+     * The default time pattern produces toFileAndConsole lines starting with yyyy-mm-ddTHH:MM:SS.ssss, e.g. 2017-08-28T20:26:16.449
      */
     public static final String DEFAILT_TIME_PATTERN = "%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tS.%1$tL";
 
@@ -26,29 +26,36 @@ public class MiniLoggerBuilder {
     public static final boolean DEFAILT_DEBUG_ENABLED = false;
 
     /**
-     * The default Log name length. Shorter names are filled with whitespace for nicer-looking log; longer names are
+     * The default Log name length. Shorter names are filled with whitespace for nicer-looking toFileAndConsole; longer names are
      * abbreviated.
      */
-    public static final int DEFAULT_LOG_NAME_LENGTH = 10;
+    public static final int DEFAULT_LOG_NAME_LENGTH = 0;
 
     /**
-     * The default file name to log to.
+     * The default file name to toFileAndConsole to.
      */
-    public static final String DEFAULT_LOG_FILE = "log.txt";
+    public static final String DEFAULT_LOG_FILE_PATTERN = null;
 
     /**
-     * The default console to log to.
+     * The default console to toFileAndConsole to.
      */
     public static final PrintStream DEFAULT_LOG_CONSOLE = System.err;
 
-    String timePattern;
-    String separator;
-    boolean debugEnabled;
-    int logNameLength;
-    Set<String> muteSet;
-    Set<String> focusSet;
-    PrintStream logPrintStream;
-    PrintStream progressPrintStream;
+    /**
+     * The period after a progress statements during which subsequent progress are skipped for performance reasons,
+     * in milliseconds.
+     */
+    public static final long DEFAULT_PROGRESS_SILENCE_PERIOD = 250;
+
+    private boolean enableDebug;
+    private String timePattern;
+    private String separator;
+    private int logNameLength;
+    private String fileNamePattern;
+    private OutputStream consoleStream;
+    private long progressSilencePeriod;
+    private Set<String> muteSet;
+    private Set<String> focusSet;
 
     /**
      * Reads the default config file ("/minilogger.conf" on class path) and returns a MiniLoggerBuilder instance
@@ -56,31 +63,37 @@ public class MiniLoggerBuilder {
      *
      * @return the MiniLoggerBuilder with config loaded from file, or default config if no file was found
      */
-    public static MiniLoggerBuilder fromFile() {
+    public static MiniLoggerBuilder fromDefaultConfigFile() {
+        InputStream in = null;
         try {
-            return fromFile("/minilogger.conf");
-        } catch (FileNotFoundException e) {
-            return new MiniLoggerBuilder();
+            in = MiniLoggerBuilder.class.getResourceAsStream("/minilogger.conf");
+            if (in == null) {
+                return new MiniLoggerBuilder();
+            } else {
+                return fromStream(in);
+            }
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    // ignore this
+                }
+            }
         }
     }
 
     /**
-     * Reads the config file specified and returns a MiniLoggerBuilder instance with parameters set from the specified
-     * file.
+     * Reads the config data from the given stream and returns a MiniLoggerBuilder instance with parameters set
+     * as specified.
      *
-     * @param configFileName the file to load
-     * @return the MiniLoggerBuilder with config loaded from the specified file
-     * @throws FileNotFoundException if the specified file is not found
+     * @param in the stream to read from
+     * @return the MiniLoggerBuilder configured as specified in the stream
      */
-    public static MiniLoggerBuilder fromFile(String configFileName) throws FileNotFoundException {
+    public static MiniLoggerBuilder fromStream(InputStream in) {
         MiniLoggerBuilder builder = new MiniLoggerBuilder();
 
-        InputStream configStream = MiniLoggerBuilder.class.getResourceAsStream(configFileName);
-        if (configStream == null) {
-            throw new FileNotFoundException("cannot find config file at '" + configFileName +"'!");
-        }
-
-        BufferedReader configReader = new BufferedReader(new InputStreamReader(configStream));
+        BufferedReader configReader = new BufferedReader(new InputStreamReader(in));
 
         try {
             for (String line = configReader.readLine(); line != null; line = configReader.readLine()) {
@@ -96,13 +109,20 @@ public class MiniLoggerBuilder {
                 if ("".equals(line)) {
                     // ignore empty lines
                 } else if (line.startsWith("timePattern:")) {
-                    builder.withTimePattern(line.substring("timePattern:".length()).trim());
+                    String timePattern = line.substring("timePattern:".length()).trim();
+                    if (timePattern.length() == 0) {
+                        builder.withTimePattern(null);
+                    } else {
+                        builder.withTimePattern(timePattern);
+                    }
                 } else if (line.startsWith("separator:")) {
                     builder.withSeparator(line.substring("separator:".length()).trim());
                 } else if (line.startsWith("debugEnabled:")) {
-                    builder.withDebugEnabled(Boolean.parseBoolean(line.substring("debugEnabled:".length()).trim()));
+                    builder.withDebugEnabled(Boolean.valueOf(line.substring("debugEnabled:".length()).trim()));
                 } else if (line.startsWith("logNameLength:")) {
                     builder.withLogNameLength(Integer.parseInt(line.substring("logNameLength:".length()).trim()));
+                } else if (line.startsWith("progressSilencePeriod:")) {
+                    builder.withProgressSilencePeriod(Long.parseLong(line.substring("progressSilencePeriod:".length()).trim()));
                 } else if (line.startsWith("muteSet:")) {
                     HashSet<String> muteSet = new HashSet<String>();
                     String mutes = line.substring("muteSet:".length()).trim();
@@ -120,18 +140,18 @@ public class MiniLoggerBuilder {
                 } else if (line.startsWith("file:")) {
                     String fileName = line.substring("file:".length()).trim();
                     if (fileName.length() > 0) {
-                        builder.withLogFile(fileName);
+                        builder.withFileNamePattern(fileName);
                     } else {
-                        builder.withLogPrintStream(null);
+                        builder.withFileNamePattern(null);
                     }
                 } else if (line.startsWith("console:")) {
                     String console = line.substring("console:".length()).trim();
                     if ("".equals(console)) {
-                        builder.withProgressPrintStream(null);
+                        builder.withConsoleStream(null);
                     } else if ("out".equalsIgnoreCase(console)) {
-                        builder.withProgressPrintStream(System.out);
+                        builder.withConsoleStream(System.out);
                     } else if ("err".equalsIgnoreCase(console)) {
-                        builder.withProgressPrintStream(System.err);
+                        builder.withConsoleStream(System.err);
                     } else {
                         throw new IllegalArgumentException("Unexpected console defined, expected 'out' or 'err', but got " + console);
                     }
@@ -142,7 +162,7 @@ public class MiniLoggerBuilder {
 
             return builder;
         } catch (IOException e) {
-            throw new RuntimeException("Cannot read config file " + configFileName + "!", e);
+            throw new RuntimeException("Exception while reading config file!", e);
         }
     }
 
@@ -150,14 +170,15 @@ public class MiniLoggerBuilder {
      * Creates a MiniLoggerBuilder with default values, ready to be adopted to your needs.
      */
     public MiniLoggerBuilder() {
-        this.withTimePattern(DEFAILT_TIME_PATTERN);
-        this.withSeparator(DEFAILT_SEPARATOR);
-        this.withDebugEnabled(DEFAILT_DEBUG_ENABLED);
-        this.withLogNameLength(DEFAULT_LOG_NAME_LENGTH);
-        this.withMuteSet(new HashSet<String>());
-        this.withFocusSet(new HashSet<String>());
-        this.withLogFile(DEFAULT_LOG_FILE);
-        this.withProgressPrintStream(DEFAULT_LOG_CONSOLE);
+        this.withTimePattern(DEFAILT_TIME_PATTERN)
+            .withSeparator(DEFAILT_SEPARATOR)
+            .withDebugEnabled(DEFAILT_DEBUG_ENABLED)
+            .withLogNameLength(DEFAULT_LOG_NAME_LENGTH)
+            .withMuteSet(new HashSet<String>())
+            .withFocusSet(new HashSet<String>())
+            .withFileNamePattern(DEFAULT_LOG_FILE_PATTERN)
+            .withConsoleStream(DEFAULT_LOG_CONSOLE)
+            .withProgressSilencePeriod(DEFAULT_PROGRESS_SILENCE_PERIOD);
     }
 
     /**
@@ -167,14 +188,15 @@ public class MiniLoggerBuilder {
      */
     public MiniLogger build() {
         return new MiniLogger(
+                this.enableDebug,
                 this.timePattern,
                 this.separator,
                 this.logNameLength,
-                this.debugEnabled,
+                this.fileNamePattern,
+                this.consoleStream,
+                this.progressSilencePeriod,
                 this.muteSet,
-                this.focusSet,
-                this.logPrintStream,
-                this.progressPrintStream);
+                this.focusSet);
     }
 
     /**
@@ -206,46 +228,43 @@ public class MiniLoggerBuilder {
      * @return this MiniLoggerBuilder, for further configuration
      */
     public MiniLoggerBuilder withDebugEnabled(boolean debugEnabled) {
-        this.debugEnabled = debugEnabled;
+        this.enableDebug = debugEnabled;
         return this;
     }
 
     /**
-     * Specifies the log PrintStream to be used by the MiniLogger created from this builder. Only info and debug but
-     * not progress messages are written to this stream.
+     * Specifies the file name to be used by the MiniLogger created from this builder. Only info and debug but
+     * no progress messages are written to this file. If the pattern contains a time reference, files will be rolled
+     * accordingly.
      *
-     * @param logPrintStream the PrintStream to use for info and debug
+     * @param fileNamePattern to generate files file to use for info and debug
      * @return this MiniLoggerBuilder, for further configuration
      */
-    public MiniLoggerBuilder withLogPrintStream(PrintStream logPrintStream) {
-        this.logPrintStream = logPrintStream;
+    public MiniLoggerBuilder withFileNamePattern(String fileNamePattern) {
+        this.fileNamePattern = fileNamePattern;
         return this;
     }
 
     /**
-     * Specifies the log file name to be used by the MiniLogger created from this builder. Only info and debug but
-     * not progress messages are written to this file.
+     * Specifies the toConsoleNoNewline PrintStream to be used by the MiniLogger created from this builder. Besides info and
+     * debug but toConsoleNoNewline messages are written to this stream.
      *
-     * @param fileName the file to use for info and debug
+     * @param consoleStream the OutputStram to use for info, debug, and progress
      * @return this MiniLoggerBuilder, for further configuration
      */
-    public MiniLoggerBuilder withLogFile(String fileName) {
-        try {
-            return this.withLogPrintStream(new PrintStream(fileName));
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Cannot log to file '" + fileName + "'!", e);
-        }
+    public MiniLoggerBuilder withConsoleStream(OutputStream consoleStream) {
+        this.consoleStream = consoleStream;
+        return this;
     }
 
     /**
-     * Specifies the progress PrintStream to be used by the MiniLogger created from this builder. Besides info and
-     * debug but progress messages are written to this stream.
+     * Specifies the Silence period
      *
-     * @param progressPrintStream the PrintStream to use for info, debug, and progress
-     * @return this MiniLoggerBuilder, for further configuration
+     * @param progressSilencePeriod
+     * @return
      */
-    public MiniLoggerBuilder withProgressPrintStream(PrintStream progressPrintStream) {
-        this.progressPrintStream = progressPrintStream;
+    public MiniLoggerBuilder withProgressSilencePeriod(long progressSilencePeriod) {
+        this.progressSilencePeriod = progressSilencePeriod;
         return this;
     }
 
@@ -253,7 +272,7 @@ public class MiniLoggerBuilder {
      * Specifies the set of focus names. If a Log has a name that is in the focus set, it's debug messages are output
      * even if the debugEnabled flag is set to false
      *
-     * @param focusSet the set of log names that are printing their debug statements
+     * @param focusSet the set of toFileAndConsole names that are printing their debug statements
      * @return this MiniLoggerBuilder, for further configuration
      */
     public MiniLoggerBuilder withFocusSet(Set<String> focusSet) {
@@ -265,7 +284,7 @@ public class MiniLoggerBuilder {
      * Specifies the set of mute names. If a Log has a name that is in the mute set, it's debug messages are not output
      * even if the debugEnabled flag is set to true
      *
-     * @param muteSet the set of log names that are not printing their debug statements
+     * @param muteSet the set of toFileAndConsole names that are not printing their debug statements
      * @return this MiniLoggerBuilder, for further configuration
      */
     public MiniLoggerBuilder withMuteSet(Set<String> muteSet) {
@@ -274,17 +293,13 @@ public class MiniLoggerBuilder {
     }
 
     /**
-     * Specifies the length of Log names. Shorter names will be expanded with whitespace so that every log message
+     * Specifies the length of Log names. Shorter names will be expanded with whitespace so that every toFileAndConsole message
      * starts at the same point in a line. Longer names will be abbreviated.
      *
      * @param logNameLength the length of Log names to use
      * @return this MiniLoggerBuilder, for further configuration
      */
-
     public MiniLoggerBuilder withLogNameLength(int logNameLength) {
-        if (logNameLength < 4) {
-            throw new IllegalArgumentException("logNameLength should not be less than 3");
-        }
         this.logNameLength = logNameLength;
         return this;
     }

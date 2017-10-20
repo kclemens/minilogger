@@ -1,68 +1,71 @@
 package kc.utils.minilogger;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.FileNotFoundException;
+import java.io.*;
 
 /**
- * Created by kclemens on 8/14/17.
+ * Created by kclemens on 10/20/17.
  */
 public class MiniLoggerBuilderTest {
 
-    @Test
-    public void testDefaults() {
-        MiniLogger miniLogger = new MiniLoggerBuilder().build();
-
-        Assert.assertEquals(MiniLoggerBuilder.DEFAILT_DEBUG_ENABLED, miniLogger.isDebugEnabled());
-        Assert.assertEquals(MiniLoggerBuilder.DEFAILT_TIME_PATTERN, miniLogger.getTimePattern());
-        Assert.assertEquals(
-                MiniLoggerBuilder.DEFAILT_SEPARATOR + "%" + MiniLoggerBuilder.DEFAULT_LOG_NAME_LENGTH + "s" + MiniLoggerBuilder.DEFAILT_SEPARATOR,
-                miniLogger.getNamePattern());
-    }
-
-    @Test
-    public void testSetNonDefaults() {
-        MiniLogger miniLogger = new MiniLoggerBuilder()
-                .withLogNameLength(12)
-                .withTimePattern("time")
-                .withSeparator("--")
-                .withDebugEnabled(true)
-                .build();
-
-        Assert.assertTrue(miniLogger.isDebugEnabled());
-        Assert.assertEquals("time", miniLogger.getTimePattern());
-        Assert.assertEquals("--%12s--", miniLogger.getNamePattern());
+    @Test(expected = IllegalArgumentException.class)
+    public void testBadParamName() {
+        MiniLoggerBuilder.fromStream(new ByteArrayInputStream("lalala:12".getBytes()));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testTooShortLogNameLength() {
-        new MiniLoggerBuilder().withLogNameLength(2);
+    @Ignore
+    public void testBadDebugEnabled() {
+        MiniLoggerBuilder.fromStream(new ByteArrayInputStream("debugEnabled:yes".getBytes()));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testLoadConfigFromBrokenFile() throws FileNotFoundException {
-        MiniLoggerBuilder.fromFile("/broken-minilogger.conf");
+    public void testBadLogNameLength() {
+        MiniLoggerBuilder.fromStream(new ByteArrayInputStream("logNameLength:very short please".getBytes()));
     }
 
-    @Test(expected = FileNotFoundException.class)
-    public void testLoadConfigFromNonExistingFile() throws FileNotFoundException {
-        MiniLoggerBuilder.fromFile("/non-existing-file-name.conf");
+    @Test(expected = IllegalArgumentException.class)
+    public void testBadProgressSilencePeriod() {
+        MiniLoggerBuilder.fromStream(new ByteArrayInputStream("progressSilencePeriod:none".getBytes()));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testBadConsole() {
+        MiniLoggerBuilder.fromStream(new ByteArrayInputStream("console:screen".getBytes()));
     }
 
     @Test
-    public void testLoadConfigFromFile() {
-        MiniLoggerBuilder builder = MiniLoggerBuilder.fromFile();
+    public void testLoadConfigFromStream() throws IOException {
+        MiniLoggerBuilder.fromStream(new ByteArrayInputStream((
+                "# comments are fine \n" +
+                "# as are blank lines\n" +
+                "\n" +
+                "\n" +
+                "timePattern:  # disable timestamp\n" +
+                "separator:--  # by the way, comments after parameters are allowed too!\n" +
+                "debugEnabled: true\n" +
+                "logNameLength: 4\n" +
+                "#progressSilencePeriod left default\n" +
+                "#muteSet left empty\n" +
+                "focusSet: some-log-name,MiniLoggerBuilderTest,some-other-name\n" +
+                "        console:#leading whitespaces not nice, but allowed\n" +
+                "file:target/log.txt\n").getBytes())).build().getLog().info("it works!");
 
-        Assert.assertEquals("time", builder.timePattern);
-        Assert.assertEquals("++", builder.separator);
-        Assert.assertEquals(22, builder.logNameLength);
-        Assert.assertTrue(builder.debugEnabled);
-        Assert.assertTrue(builder.muteSet.isEmpty());
-        Assert.assertEquals(2, builder.focusSet.size());
-        Assert.assertTrue(builder.focusSet.contains("other-name"));
-        Assert.assertTrue(builder.focusSet.contains("some-logger-name"));
-        Assert.assertEquals(System.err, builder.progressPrintStream);
-        Assert.assertEquals(null, builder.logPrintStream);
+        assertFileContentsAndDelete("target/log.txt", MiniLoggerBuilderTest.class.getSimpleName().substring(0, 4) + "--it works!\n");
+    }
+
+
+    private void assertFileContentsAndDelete(String fileName, String expectedFileContents) throws IOException {
+        int expectedBytes = expectedFileContents.toCharArray().length;
+        char[] consoleBuffer = new char[expectedBytes];
+        BufferedReader console = new BufferedReader(new FileReader(fileName));
+        Assert.assertEquals(expectedBytes, console.read(consoleBuffer));
+        Assert.assertArrayEquals(expectedFileContents.toCharArray(), consoleBuffer);
+        Assert.assertEquals(-1, console.read());
+        console.close();
+        Assert.assertTrue(new File(fileName).delete());
     }
 }
